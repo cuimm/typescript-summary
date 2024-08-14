@@ -17,9 +17,9 @@ let name: string = 'cuimm';
 let age: number = 20;
 let flga: boolean = true;
 
-const title: String = 'title'; // 在赋值的时候，子集可以赋给父级
-const title2: String = new String('title'); // 类的类型，用来描述实例
-const title3: string = 'title';
+let title = 'title'; // 在赋值的时候，子集可以赋给父级
+let title2: String = new String('title'); // 类的类型，用来描述实例
+let title3: string = 'title';
 
 // 数组类型
 let arr: number[] = [1, 2, 3];
