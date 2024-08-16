@@ -1,235 +1,225 @@
 /**
- * 类的构成：
- *      构造函数
- *      属性（实例属性、原型属性、静态属性）
- *      方法（实例方法、原型方法、静态方法）
- *      属性访问器
+ * 接口 interface
  * 
- * 类的修饰符：
- *      public：公开属性。父类和子类都可以访问。
- *      protected：保护属性。类本身、子类内部可以访问，外部无法访问。
- *      private：私有属性。只能在类中访问。
+ * 接口不能有具体的实现，可以用于描述函数、对象、类、混合类型。
+ * 
  */
 
-// 1. 定义类
-{
-    class Circle {
-        public x: number; // TS中要求所有的属性必须先声明再使用。声明使用修饰符(public/protected/private)来声明。
-        public y: number;
-        constructor(x: number, y: number) {
-            this.x = x;
-            this.y = y;
-        }
-    }
+// const getFullName = ({ firstName, lastName }: { firstName: string, lastName: string }) => {
+//     return firstName + lastName;
+// }
+
+// 下面两种定义IFullName的方式是一样的效果
+// type IFullName = {
+//     firstName: string,
+//     lastName: string,
+// }
+interface IFullName {
+    firstName: string;
+    lastName: string;
 }
 
-// 2. 简化写法
-{
-    /*** 简化写法 ***/
-    class Circle2 {
-        // 构建函数内实例属性如果添加了修饰符，就不需要再为变量赋值了。
-        // 没有修饰符，默认是public
-        constructor(public x: number, public y: number) { }
-    }
-    const c = new Circle2(1, 2);
-    console.log(c);
-    /*
-    // Circle2编译后的代码：
-    class Circle2 {
-        constructor(x, y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
-    */
+// 下面两种定义函数的方式是一样的效果
+// type IFn = (obj: IFullName) => string;
+type IFn = {
+    (obj: IFullName): string
+};
+const getFullName: IFn = ({ firstName, lastName }: IFullName) => {
+    return firstName + lastName;
 }
+console.log(getFullName({ firstName: 'cui', lastName: 'mm' }));
 
-// 3. 子类继承
-{
-    class Animal {
-        constructor(public name: string, private age: number) { }
-    }
-    class Tom extends Animal {
-        constructor(name: string, age: number) {
-            super(name, age);
-        }
-    }
-    const tom = new Tom('Tom猫', 12);
-
-    // tom.age // 子类Tom访问age报错：属性“age”为私有属性，只能在类“Animal”中访问
-    console.log(tom['age']); // 使用此方式可以访问私有属性，绕过TS校验
-}
-
-// 4. 私有属性（不建议用，私有属性会被编译成WeakMap，语法版本较高。）
-{
-    class Animal {
-        #privateProp: string = '私有属性'; // 仅在父类中可以访问
-        constructor(public name: string, public age: number) { }
-    }
-    class Cat extends Animal {
-        constructor(name: string, age: number) {
-            super(name, age);
-        }
-    }
-    const cat = new Cat('Tom猫', 10);
-    // cat['#privateProp'] // 子类访问父类的私有属性报错：类型“Cat”上不存在属性“#privateProp”
-
-    // 编译后代码：
-    /*
-    class Animal {
-        constructor(name, age) {
-            this.name = name;
-            this.age = age;
-            _Animal_privateProp.set(this, '私有属性'); // 仅在父类中可以访问
-        }
-    }
-    _Animal_privateProp = new WeakMap();
-    class Cat extends Animal {
-        constructor(name, age) {
-            super(name, age);
-        }
-    }
-    */
-}
-
-// 5. readonly只读属性（初始化后不可以再修改）
-{
-    class Animal {
-        public readonly name: string = 'animal';
-        // 类的构建函数属于初始化操作，可以给readonly的数据赋值
-        constructor(name: string, public readonly age: number) {
-            this.name = name;
-            this.name = 'animal2';
-            this.name = 'animal3';
-            this.age = age;
-        }
-    }
-    const animal = new Animal('动物', 10);
-    console.log(animal);
-    // animal.name = '动物' // 给只读属性赋值报错：无法为“name”赋值，因为它是只读属性。
-}
-
-// 6. 属性访问器（最终会被编译成Object.defineProperty）
-{
-    class Animal {
-        private _sound: string = '';
-        constructor(public name: string, public age: number) { }
-        get sound() {
-            return this._sound;
-        }
-        set sound(val: string) {
-            this._sound = val;
-        }
-    }
-    class Cat extends Animal {
-        constructor(name: string, age: number) {
-            super(name, age);
-        }
-    }
-    const cat = new Cat('Tom', 10);
-    cat.sound = '喵～'
-    console.log(cat);
-}
-
-// 7. 实例方法/静态方法
-{
-    class Animal {
-        static address: string = 'China'; // 静态属性
-        private _sound: string = '';
-        constructor(public name: string, public age: number) { }
-
-        get sound() {
-            return this._sound;
-        }
-        set sound(val: string) {
-            this._sound = val;
-        }
-
-        eat(foot: string) { // 实例方法
-            console.log('正在吃' + foot);
-        }
-        static getAddress() { // 静态方法
-            return this.address;
-        }
-    }
-    class Cat extends Animal {
-        constructor(name: string, age: number) {
-            super(name, age);
-        }
-        // 子类重写父类的实例方法。子类重写父类实例方法时，需保证兼容父类的类型。（返回的void代表不关心返回类型）
-        eat(foot: string) {
-            console.log(`${this.name}正在开心的吃${foot}`);
-        }
-        static getAddress() { // 子类可以重写父类的静态方法
-            return super.getAddress(); // 调用父类的静态方法【super在原型方法中指向实例、在静态方法和构造方法中指向父类】
-        }
-    }
-    const cat = new Cat('TOM', 10);
-    console.log(Cat.getAddress()); // 调用静态方法
-}
-
-// 8. 单例模式
-{
-    class Singleton {
-        private static instance = new Singleton();
-        private constructor() {
-        }
-        static getInstance() {
-            return this.instance;
-        }
-    }
-
-    const s1 = Singleton.getInstance();
-    const s2 = Singleton.getInstance();
-    console.log('单例模式: ', s1 === s2); // true   
-}
-
-// 9. 抽象类
 /**
- * 1. 抽象类不能new
- * 2. 抽象类可以创建抽象属性和方法，让子类实现。但是静态方法、静态属性不可以。
- * 3. 抽象类中可以有具有的实现。
+ * type和interface的区别：
+ * 1. 如果只是用来描述结构，推荐interface。
+ * 2. 如果涉及到联合类型，只能使用type声明。
+ * 3. type不能被扩展，interface可以扩展。
+ * 4. type不能重名，interface重名可以合并。
+ * 5. type可以使用循环和条件，interface不行。
+ * 其他情况下可以互换。（函数类型一般采用type声明）。
+ * 
+ * => 一般情况下，函数使用type声明、对象使用interface声明。
  */
-{
-    abstract class Animal {
-        static habitat = '地球';
-        
-        // 抽象属性
-        abstract address: string;
 
-        // 没有具体实现，一般描述的是实例方法。
-        abstract eat(): void;
 
-        // TS中不做区分，但是一般这种描述的是实例成员属性。
-        abstract play: () => void;
-
-        // 抽象类中可以有具体的实现
-        drink() {
-            console.log('drink');
-        }
-    }
-
-    class Cat extends Animal {
-        address: string = ''; // 抽象属性
-        constructor(public name: string, public age: number, address: string) {
-            super();
-            this.address = address;
-        }
-        eat(): void {
-            throw new Error("Method not implemented.");
-        }
-        // play() {} // 子类如果按照实例方法实现会报错：类“Animal”将“play”定义为实例成员属性，但扩展类“Cat”将其定义为实例成员函数。
-        play: () => void = () => {}; // 按照实例属性方式直接赋值，也可以在构造函数中赋值
-
-        drink() {
-            console.log('drink~~~');
-        }
-    }
-
-    console.log(Cat.habitat);
-    console.log(new Cat('Tom', 10, 'SD'));
-    
+/**
+ * 混合类型
+ */
+// 使用接口定义【混合类型】(一下两种定义click方法的方式是一样的效果)
+// type IClick = {
+//     (): number,
+//     count: number
+// }
+interface IClick {
+    (): number; // 描述【函数】
+    count: number; // 描述【属性】
 }
+// 如下使用let定义click方法时，报错：由于“click'”不具有返回类型批注并且在它的一个返回表达式中得到直接或间接引用，因此它隐式具有返回类型 "any"。ts(7023)
+// let click = () => {
+//     return click.count++;
+// }
+// click.count = 0;
 
+// => 使用const定义click方法
+const click: IClick = () => {
+    return click.count++;
+};
+click.count = 0;
+
+console.log(click());
+
+
+/**
+ * 
+ */
+
+interface IVeg {
+    readonly color: string; // 只读属性，后续不可修改
+    size?: number; // 可选属性
+    taste: string;
+    [key: string]: any // 任意类型。
+}
+const obj = {
+    color: 'red',
+    size: 10,
+    taste: "sweet",
+    xxx: 'xxx'
+};
+const tomato: IVeg = obj;
+const tomato2: IVeg = {
+    color: 'red',
+    size: 10,
+    taste: "sweet",
+    xxx: 'xxx',
+    1: 100,
+    [Symbol()]: 'symbol'
+};
+
+/*
+    1. 如果对象中的属性多于接口的属性，可以直接采用断言的方式来赋值。
+        const tomato: IVeg = {
+            color: 'red',
+            size: 10,
+            taste: "sweet",
+            xxx: 'xxx'
+        } as IVeg;
+    2. 可以基于接口的特性再写一个同名的接口（多个同名接口属性会合并）【不推荐】
+        interface IVeg {
+            xxx: string;
+        }
+    3. 通过继承原有属性的方式产生一个新的类型
+        interface IVeg2 extends IVeg {
+            xxx: string
+        }
+        const tomato: IVeg2 = {
+            color: 'red',
+            size: 10,
+            taste: "sweet",
+            xxx: 'xxx'
+        };
+    4. 任意类型扩展【常用于一部分格式固定、一部分不固定的类型】
+        interface IVeg {
+            readonly color: string; // 只读属性，后续不可修改
+            size?: number; // 可选属性
+            taste: string;
+            [key: string]: any // 任意类型。
+        }
+        const tomato: IVeg = {
+            color: 'red',
+            size: 10,
+            taste: "sweet",
+            xxx: 'xxx',
+            1: 100,
+            [Symbol()]: 'symbol'
+        };
+    5. 类型兼容
+        interface IVeg {
+            readonly color: string; // 只读属性，后续不可修改
+            size?: number; // 可选属性
+            taste: string;
+        }
+        const obj = {
+            color: 'red',
+            size: 10,
+            taste: "sweet",
+            xxx: 'xxx'
+        };
+        const tomato: IVeg = obj; // 此处先定义一个新的变量obj，然后将obj赋值给IVeg类型的变量。
+    6. 交叉类型&...
+*/
+
+/**
+ * 数字索引
+ */
+interface IArray {
+    [key: number]: any
+};
+const arr: IArray = [1, 2, 3];
+const arr2: IArray = {
+    0: 0,
+    1: 1,
+    2: 2
+};
+
+/**
+ * 通过索引访问字符串可以取值的类型
+ */
+interface IPerson {
+    name: string;
+    [key: string]: any;
+    [key: number]: any;
+    company: {
+        rank: number
+    }
+}
+const p: IPerson = {
+    name: 'cuimm',
+    age: 18,
+    company: {
+        rank: 100
+    }
+};
+// type PersonNameType = IPerson.name; // 报错：无法访问“IPerson.name”，因为“IPerson”是类型，不是命名空间。是否要使用“IPerson["name"]”检索“IPerson”中“name”属性的类型?ts(2713)
+type PersonNameType = IPerson['name']; // 通过索引访问符获取name的类型【返回的是type】
+type PersonAnyType = IPerson['string']; // 通过索引访问符获取任意类型的类型
+type PersonRankType = IPerson['company']['rank']; // 通过索引访问父获取rank的类型
+
+/**
+ * keyof可以取一个类型中key的集合
+ * 可以实现valueOf：取值的类型集合
+ */
+interface ICar {
+    color: string;
+    price: 10000;
+    width: 12;
+}
+const car: ICar = {
+    color: 'red',
+    price: 10000,
+    width: 12
+};
+type c = typeof car; // ICar
+type keyOfCar = keyof ICar & {}; // type valueOf = "color" | "price" | "width"。keyof T：返回包含T所有属性别的联合类型。
+type valueOf = ICar[keyof ICar]; // type valueOf = string | 10000 | 12。通过索引运算符获取值的集合
+
+
+/**
+ * 接口继承 【implements】
+ */
+interface ChineseSpeak {
+    speakChinese(): void;
+}
+interface EnglishSpeak {
+    speakEnglish(): void;
+}
+// 类可以继承多个接口
+class Speak implements ChineseSpeak, EnglishSpeak {
+    speakChinese(): void {
+        throw new Error("Method not implemented.");
+    }
+    speakEnglish(): void {
+        throw new Error("Method not implemented.");
+    }
+}
 
 export { };
