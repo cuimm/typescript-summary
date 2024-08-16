@@ -2,27 +2,38 @@
     'use strict';
 
     /**
-     * 联合类型
+     * 函数
+     *
+     * 函数中的类型 1）函数的声明方式 2） 函数的参数  3） 函数的返回值
+     * 1. function关键字定义函数
+     * 2. 表达式（可以描述变量的类型）
+     *
+     * 1. function关键字来声明的函数：可以提升到当前作用域顶部、不能标注函数类型。
+     * 2. 函数表达式来声明的函数：必须赋予满足定义的类型。
+     *
      */
-    let strOrNumber;
-    // 联合类型，默认没有赋值的时候，可以调用公共方法。为了安全，只能访问公共属性。
-    // strOrNumber.toString(); // 直接使用报错：在赋值前使用了变量“strOrNumber”。ts(2454)
-    strOrNumber.toString(); // 非空断言。表示strOrNumber肯定不为空。
-    strOrNumber = 'string';
-    strOrNumber.toString();
-    strOrNumber = 100;
-    strOrNumber.toFixed(); // 赋值后会推断类型。
-    /*
-    断言
-     */
-    let ele = document.getElementById('app');
-    // ele.style.color = 'red'; // 报错：“ele”可能为 “null”
-    ele.style.color = 'red'; // !非空断言。TS语法
-    // ele?.style.color = 'red'; // JS语法。可选链操作赋
-    // console.log(false ?? 100); // JS语法。空值合并操作符：除了null和undefined，都会返回左边的值
-    // as断言。可以强制将类型断言成已经存在的某个类型。
-    ele.style.color = 'green'; // 将ele断言成HTMLElement。
-    ele.style.color = 'green'; // 将ele断言成HTMLElement。不推荐写法。会和JSX语法冲突。
+    // function关键字定义函数
+    // 函数的this。TS中的this需手动指定，默认是函数中的第一个参数。
+    // TS中的`typeof`：来获取变量的类型。
+    // `keyof`：获取对象中的key的类型，作为联合类型
+    let person = {
+        name: 'cuimm',
+        age: 20
+    };
+    function getValue(key) {
+        return this[key];
+    }
+    getValue.call(person, 'name'); // 调用
+    function toArray(value) {
+        if (typeof value === 'string') {
+            return value.split('');
+        }
+        else {
+            return value.toString().split('').map(Number);
+        }
+    }
+    toArray(123);
+    toArray('123');
 
 })();
 //# sourceMappingURL=bundle.js.map

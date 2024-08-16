@@ -82,6 +82,7 @@ const empty: null = null;
 /*
 void
     代表函数的返回值为空，只在函数中使用。
+    <函数返回void表示不关心返回的具体类型>
 */
 function fn(): undefined {
     return undefined;
