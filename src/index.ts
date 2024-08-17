@@ -1,225 +1,238 @@
 /**
- * 接口 interface
+ * 泛型
+ *      可以用于函数、接口、类、type
+ *      如果在使用时无法确定当时的类型，可以采用泛形来定义
  * 
- * 接口不能有具体的实现，可以用于描述函数、对象、类、混合类型。
+ * T写在等号后面：表示【定义函数】的时候传参
+ *      type IForEach = <T>(array: T[], callback: ICallback<T>) => void; 
  * 
- */
-
-// const getFullName = ({ firstName, lastName }: { firstName: string, lastName: string }) => {
-//     return firstName + lastName;
-// }
-
-// 下面两种定义IFullName的方式是一样的效果
-// type IFullName = {
-//     firstName: string,
-//     lastName: string,
-// }
-interface IFullName {
-    firstName: string;
-    lastName: string;
-}
-
-// 下面两种定义函数的方式是一样的效果
-// type IFn = (obj: IFullName) => string;
-type IFn = {
-    (obj: IFullName): string
-};
-const getFullName: IFn = ({ firstName, lastName }: IFullName) => {
-    return firstName + lastName;
-}
-console.log(getFullName({ firstName: 'cui', lastName: 'mm' }));
-
-/**
- * type和interface的区别：
- * 1. 如果只是用来描述结构，推荐interface。
- * 2. 如果涉及到联合类型，只能使用type声明。
- * 3. type不能被扩展，interface可以扩展。
- * 4. type不能重名，interface重名可以合并。
- * 5. type可以使用循环和条件，interface不行。
- * 其他情况下可以互换。（函数类型一般采用type声明）。
- * 
- * => 一般情况下，函数使用type声明、对象使用interface声明。
- */
-
-
-/**
- * 混合类型
- */
-// 使用接口定义【混合类型】(一下两种定义click方法的方式是一样的效果)
-// type IClick = {
-//     (): number,
-//     count: number
-// }
-interface IClick {
-    (): number; // 描述【函数】
-    count: number; // 描述【属性】
-}
-// 如下使用let定义click方法时，报错：由于“click'”不具有返回类型批注并且在它的一个返回表达式中得到直接或间接引用，因此它隐式具有返回类型 "any"。ts(7023)
-// let click = () => {
-//     return click.count++;
-// }
-// click.count = 0;
-
-// => 使用const定义click方法
-const click: IClick = () => {
-    return click.count++;
-};
-click.count = 0;
-
-console.log(click());
-
-
-/**
+ * T写在等号前面：表示【调用函数】的时候传参
+ *      type ICallback<T> = (item: T, index: number) => void; 
  * 
  */
 
-interface IVeg {
-    readonly color: string; // 只读属性，后续不可修改
-    size?: number; // 可选属性
-    taste: string;
-    [key: string]: any // 任意类型。
+/************ 1. 提供一个方法创建Person、Animal等实例 ************/
+class Person {
+    constructor(public name: string, public age: number) { }
 }
-const obj = {
-    color: 'red',
-    size: 10,
-    taste: "sweet",
-    xxx: 'xxx'
-};
-const tomato: IVeg = obj;
-const tomato2: IVeg = {
-    color: 'red',
-    size: 10,
-    taste: "sweet",
-    xxx: 'xxx',
-    1: 100,
-    [Symbol()]: 'symbol'
-};
+class Animal {
+    constructor(public name: string, public age: number, public sound: string) { }
+}
+// 1. 初实现
+{
+    // type ITarget = new (name: string, age: number) => any;
+    type ITarget = {
+        new(name: string, age: number): any
+    }
+    function createIntance(target: ITarget, name: string, age: number) {
+        return new target(name, age);
+    }
+    const person = createIntance(Person, 'cuimm', 18); // person推导出来的类型为：any
+}
 
-/*
-    1. 如果对象中的属性多于接口的属性，可以直接采用断言的方式来赋值。
-        const tomato: IVeg = {
-            color: 'red',
-            size: 10,
-            taste: "sweet",
-            xxx: 'xxx'
-        } as IVeg;
-    2. 可以基于接口的特性再写一个同名的接口（多个同名接口属性会合并）【不推荐】
-        interface IVeg {
-            xxx: string;
+// 2. 使用范型
+{
+    interface ITarget<T> {
+        new(name: string, age: number): T; // 描述类的类型，必须可以new
+    }
+    function createIntance<T>(target: ITarget<T>, name: string, age: number) {
+        return new target(name, age);
+    }
+    const person = createIntance<Person>(Person, 'cuimm', 18);
+    console.log(person);
+
+    // const animal = createIntance(Animal, 'cat', 10);
+}
+
+// 3. 优化：function + 使用范型 + 剩余/展开运算符
+{
+    type ITarget<T> = new (...args: any[]) => T; // 【类的类型定义】
+    function createIntance<T>(target: ITarget<T>, ...args: any[]): T {
+        return new target(args);
+    }
+    const person = createIntance<Person>(Person, 'cuimm', 18); // person类型：Person
+    const animal = createIntance(Animal, 'cat', 10, '喵'); // animal类型：Animal
+}
+
+// 4. 优化：函数表达式 + 范型 + 剩余/展开运算符
+{
+    type ITarget<T> = new (...args: any[]) => T;
+    // type ICreateInstance = <T>(Target: ITarget<T>, ...args: any[]) => T;
+    type ICreateInstance = {
+        <T>(Target: ITarget<T>, ...args: any[]): T
+    };
+    const createInstance: ICreateInstance = (Target, ...args) => {
+        return new Target(...args);
+    };
+    const person = createInstance(Person, 'cuimm', 20);
+    const animal = createInstance(Animal, 'cat', 10, '喵');
+}
+
+
+/************ 2. 根据提供的数据生成对应长度的数组 ************/
+function createArray<T>(length: number, value: T) {
+    const result: T[] = [];
+    for (let index = 0; index < length; index++) {
+        result.push(value);
+    }
+    return result;
+}
+const arr1 = createArray<string>(3, 'abc'); // arr1推导类型为：string[]
+const arr2 = createArray(3, 100); // arr2推导类型为：number[]
+
+
+/************ 3. 交换元组的两个变量 ************/
+{
+    function swap<T, K>(tuple: [T, K]): [K, T] {
+        return [tuple[1], tuple[0]];
+    }
+
+    const result = swap([100, 'abc']); // result's type is: [string, number]
+    const result2 = swap([100, true]); // result's type is: [boolean, number]
+}
+
+// 使用函数表达式定义
+{
+    type ISwap = <T, K>(tuple: [T, K]) => [K, T]; // 定义函数的方法类型
+    const swap: ISwap = tuple => {
+        return [tuple[1], tuple[0]];
+    }
+    const result = swap([100, 'abc']); // result's type is: [string, number]
+    const result2 = swap([100, true]); // result's type is: [boolean, number]
+}
+
+
+
+/************ 4. 数组循环 ************/
+{
+    const forEach = <T>(array: Array<T>, callback: (item: T, index: number) => void) => {
+        for (let index = 0; index < array.length; index++) {
+            callback(array[index], index);
         }
-    3. 通过继承原有属性的方式产生一个新的类型
-        interface IVeg2 extends IVeg {
-            xxx: string
+    };
+    forEach([1, 2, 3, 'a', 'b', 'c', true], (item, index) => {
+        console.log(item, index);
+    });
+}
+{
+    type ICallback<T> = (item: T, index: number) => void; // T写在等号前面：表示【调用函数】的时候传参
+    type IForEach = <T>(array: T[], callback: ICallback<T>) => void; // T写在等号后面：表示【定义类型】的时候传参
+
+    const forEach: IForEach = (array, callback) => {
+        for (let index = 0; index < array.length; index++) {
+            callback(array[index], index); // TS在推导的时候并没有真正执行。范型使用的时候传递参数，可以直接推导，但是内部调用的时候没有确定类型。
         }
-        const tomato: IVeg2 = {
-            color: 'red',
-            size: 10,
-            taste: "sweet",
-            xxx: 'xxx'
+    };
+
+    forEach([1, 2, 3, 'a', 'b', 'c', true,], (item, index) => {
+        console.log(item, index);
+    });
+}
+
+/************ 5. 范型默认值 ************/
+{
+    // 范型是可以设置默认值的
+    type Union<T = boolean> = T | number | string;
+    const union: Union<boolean> = true;
+    const union2: Union = true; // 范型设置了默认值之后，就可以不再传递T的类型
+}
+
+/************ 5. 范型约束 ************/
+// 1）传参约束
+{
+    // 范型约束：要求传递的参数必须符合要求。语法：A extends B。要求A是B的子类型或者同类型。【A包含B所有的属性】
+
+    // 1）T必须是 string 或者 number 类型
+    function handle<T extends string | number>(val: T): T {
+        return val;
+    }
+    const v = handle(100);
+    const v2 = handle('abc');
+
+    // 2）传入参数必须有length属性
+    interface IWidthLen {
+        length: number
+    }
+    function handle2<T extends IWidthLen>(val: T): number {
+        return val.length;
+    }
+    handle2('abc');
+    handle2([]);
+    /* #__PURE__*/ handle2({ a: 1, b: 2, length: 100 }); // val有length属性，就可以是IWidthLen的子类型。【对于对象，A 继承 B： A的属性要比B多】
+}
+
+// 3）获取对象属性值
+{
+    function getVal<T>(val: T, key: keyof T) {
+        return val[key];
+    }
+    getVal({ name: 'cuimm', age: 20 }, 'age');
+
+    // 优化：K extends number | string
+    function getVal2<T, K extends keyof T>(val: T, key: K) {
+        return val[key];
+    }
+    getVal2({ name: 'cuimm', age: 20 }, 'age');
+}
+
+// 4）登陆
+{
+    // 角色
+    enum Role {
+        ADMIN,
+        SAMPLE,
+    }
+    type IRole = 1 | 2 | 3;
+    // 接口通用返回值结构
+    interface IResponse<T> {
+        code: number;
+        message?: string;
+        data: T;
+    }
+    // 登陆接口返回值结构
+    interface ILoginResponseData {
+        token: string;
+        // role: 1 | 2 | 3
+        // role: IRole
+        role: Role
+    };
+    function login(): IResponse<ILoginResponseData> {
+        return {
+            code: 10000,
+            message: 'success',
+            data: {
+                token: 'hiwW2dasbs',
+                role: 1,
+            },
         };
-    4. 任意类型扩展【常用于一部分格式固定、一部分不固定的类型】
-        interface IVeg {
-            readonly color: string; // 只读属性，后续不可修改
-            size?: number; // 可选属性
-            taste: string;
-            [key: string]: any // 任意类型。
+    }
+    const data = login();
+}
+
+// 5）获取数组最大值
+{
+    class MyArray<T> {
+        private array: T[] = [];
+        set(val: T) {
+            this.array.push(val);
         }
-        const tomato: IVeg = {
-            color: 'red',
-            size: 10,
-            taste: "sweet",
-            xxx: 'xxx',
-            1: 100,
-            [Symbol()]: 'symbol'
-        };
-    5. 类型兼容
-        interface IVeg {
-            readonly color: string; // 只读属性，后续不可修改
-            size?: number; // 可选属性
-            taste: string;
+        max(): T {
+            let max = this.array[0];
+            for (let index = 0; index < this.array.length; index++) {
+                const current = this.array[index];
+                if (current > max) {
+                    max = current;
+                }
+            }
+            return max;
         }
-        const obj = {
-            color: 'red',
-            size: 10,
-            taste: "sweet",
-            xxx: 'xxx'
-        };
-        const tomato: IVeg = obj; // 此处先定义一个新的变量obj，然后将obj赋值给IVeg类型的变量。
-    6. 交叉类型&...
-*/
-
-/**
- * 数字索引
- */
-interface IArray {
-    [key: number]: any
-};
-const arr: IArray = [1, 2, 3];
-const arr2: IArray = {
-    0: 0,
-    1: 1,
-    2: 2
-};
-
-/**
- * 通过索引访问字符串可以取值的类型
- */
-interface IPerson {
-    name: string;
-    [key: string]: any;
-    [key: number]: any;
-    company: {
-        rank: number
     }
-}
-const p: IPerson = {
-    name: 'cuimm',
-    age: 18,
-    company: {
-        rank: 100
-    }
-};
-// type PersonNameType = IPerson.name; // 报错：无法访问“IPerson.name”，因为“IPerson”是类型，不是命名空间。是否要使用“IPerson["name"]”检索“IPerson”中“name”属性的类型?ts(2713)
-type PersonNameType = IPerson['name']; // 通过索引访问符获取name的类型【返回的是type】
-type PersonAnyType = IPerson['string']; // 通过索引访问符获取任意类型的类型
-type PersonRankType = IPerson['company']['rank']; // 通过索引访问父获取rank的类型
 
-/**
- * keyof可以取一个类型中key的集合
- * 可以实现valueOf：取值的类型集合
- */
-interface ICar {
-    color: string;
-    price: 10000;
-    width: 12;
+    const myArray = new MyArray<number>();
+    myArray.set(100);
+    myArray.set(300);
+    myArray.set(200);
+    const max = myArray.max();
+    console.log(max);
 }
-const car: ICar = {
-    color: 'red',
-    price: 10000,
-    width: 12
-};
-type c = typeof car; // ICar
-type keyOfCar = keyof ICar & {}; // type valueOf = "color" | "price" | "width"。keyof T：返回包含T所有属性别的联合类型。
-type valueOf = ICar[keyof ICar]; // type valueOf = string | 10000 | 12。通过索引运算符获取值的集合
-
-
-/**
- * 接口继承 【implements】
- */
-interface ChineseSpeak {
-    speakChinese(): void;
-}
-interface EnglishSpeak {
-    speakEnglish(): void;
-}
-// 类可以继承多个接口
-class Speak implements ChineseSpeak, EnglishSpeak {
-    speakChinese(): void {
-        throw new Error("Method not implemented.");
-    }
-    speakEnglish(): void {
-        throw new Error("Method not implemented.");
-    }
-}
-
 export { };
