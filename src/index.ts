@@ -1,159 +1,230 @@
 /**
- * 条件分发 和 内置类型
+ * 内置类型
+ *    基于循环的映射类型：
+ *      Partial<T>：循环遍历T【最外层】的属性，将属性变成可选属性。
+ *      Required<T>：循环遍历【最外层】的属性，将属性变成必填属性。
+ *      Readonly<T>：只读属性。将对象最外层属性变成只读属性
+ *      Mutate：可选属性。将对象最外层属性变成可选属性
  * 
- * 内置类型：
- *      Extract：交集：两个类型公共的部分
- *      Exclude：排除：从T中排除U的部分
- *      NonNullable：非空
- *      ReturnType：获取函数返回值
- *      Parameters：获取函数参数列表
- *      ConstructorParameters：获取类的构造函数的参数
- *      InstanceType：获取类的实例类型
+ *      Pick<T, k>：从已有类型中挑选所需属性
+ *      Omit<T, k>：从已有类型中排除指定属性
+ *      Record<T, K>：主要用来定义对象，接收2个范型，【对象键的类型和对象值的类型】
  */
 
-/** 
- * 1. 条件类型的分发 
- * 我们可以通过 A extends B 来判断，A extends B 返回true的时候，A就是B的子类型
+/**
+ * 内置类型【Partial】
  * 
- * 条件分发要满足的条件：（分发是默认开启的）
- *  1. A类型是通过范型传入的。
- *  2. A类型如果是联合类型，会进行分发。
- *  3. 范型参数A必须是完全裸露的，才具备分发的能力。【A & {} 这种交叉类型会返回一个新的类型，这种就不是裸露的类型】
- * 
- * 什么是裸类型？只有自己一个类型，没有和其他类型发生关系。
- * 什么是分发：将传入联合类型先单个依次比较，比较完之后再进行联合。
- * 不想分发？将传入的联合类型整体进行运算后，再进行比较。（只要让A不是裸类型，就可以禁用分发）
- * 
- * 【我们在进行父子关系的比较时，默认情况下应该关闭分发。】
-*/
+ * Partial<T>：循环便利T【最外层】的属性，将属性变成可选属性。
+ */
 {
-    interface IBird {
-        name: '鸟';
+    // 循环T最外层属性，将最外层属性变成可选属性
+    type Partial<T> = {
+        [K in keyof T]?: T[K]
     }
-    interface ISky {
-        name: '天';
-    }
-    interface IFish {
-        ame: '雨';
-    }
-    interface IWater {
-        name: '水';
+    // 循环T所有层级的所有属性，将全部的属性变成可选属性
+    type DeepPartial<T> = {
+        [K in keyof T]?: T[K] extends object ? Partial<T[K]> : T[K]
     }
 
-    // 1）条件类型
-    type Conditional = IFish | IBird extends IFish ? IWater : ISky; // 返回：ISky。此情况没有产生分发
-
-    // 2）条件类型分发
-    type Conditiona2<T> = T extends IFish ? IWater : ISky;
-
-    type R1 = Conditiona2<IFish>; // 返回：IWater【非联合类型】
-    type R2 = Conditiona2<IBird>; // 返回：ISky【非联合类型】
-    type R3 = Conditiona2<IFish | IBird>; // 返回：ISky | IWater【满足上述3个条件，条件类型会进行分发】(Conditiona2<IFish>返回IWater，Conditiona2<IBird>返回ISky，分发后结果为ISky | IWater)
-    type R4 = Conditiona2<(IFish & {} | IBird) & {}>;
-
-    // 3）条件类型分发-2
-    type Conditiona3<T, U> = T extends U ? true : false;
-
-    type R11 = Conditiona3<1 | 2, 1 | 3 | 5>; // 返回：boolean。T满足范型传入、联合类型、裸露类型的条件，进行条件分发：1 extends 1 ｜ 3 ｜ 5 => true，2 extends 1 ｜ 3 ｜ 5 => false，true ｜ false => boolean
-    type R12 = Conditiona3<1 | 2, 1 | 2 | 3>; // 返回：true
-
-    // 4）禁用分发【某些情况下需要关闭分发能力，因为分发会造成判断不准确】
-    // => A extends B ：只要让A不是裸类型，就会丧失分发机制
-    type Conditiona4<T, U> = T & {} extends U ? true : false;
-
-    type R21 = Conditiona4<1 | 2, 1>; // 返回：false【因为T与{}相交之后不再是裸类型，禁用了分发机制】
-
-    // 优化-1【使用交叉类型产生一个新的非裸类型】
-    type NoDistribute<T> = T & {};
-    type Conditiona5<T, U> = NoDistribute<T> extends U ? true : false;
-
-    type R22 = Conditiona5<1 | 2, 1>; // 返回：false
-
-    // 优化-2【产生一个新的非裸的元组类型】
-    type Conditiona6<T, U> = [T] extends [U] ? true : false;
-    type R23 = Conditiona6<1 | 2, 1>; // 返回：false
-
-    // 条件判断的一些注意事项
-    type IsNever<T> = T extends never ? true : false;
-    // => never 直接比较的时候，无法返回正确的结果。
-    type R31 = IsNever<never>; // 返回：never。
-
-    // 解决never问题-1【元组】
-    type IsNever2<T> = [T] extends [never] ? true : false;
-    type R33 = IsNever2<never>; // 返回：true。
-    // 解决never问题-2【交叉】
-    type IsNever3<T> = NoDistribute<T> extends never ? true : false;
-    type R34 = IsNever3<never>; // 返回：true。
-}
-
-// 内置类型
-// TS本身实现了一些常见的内置类型。（安装的typescript模块内包含了很多内置类型）
-{
-    // 1. Extract.【交集：两个类型公共的部分】
-    // type Extract<T, U> = T extends U ? T : never;
-    type R = Extract<1 | 2 | 3, 1 | 2 | 4>; // 
-
-    // 2. Exclude. 【排除：从T中排除U的部分】
-    // type Exclude<T, U> = T extends U ? never : T;
-    type R2 = Exclude<1 | 2 | 3 | 4 | 5, 2 | 4>;
-
-    // 3. NonNullable. 【非空】
-    // type NonNullable<T> = T extends null | undefined ? never : T; 
-    // type NonNullable<T> = T & {};
-    // type R31 = null & {}; // never
-    // type R32 = undefined & {}; // never
-    type R3 = NonNullable<1 | 2 | null | undefined>;
+    // 实例：
+    interface Person {
+        name: string;
+        age: number;
+        address: {
+            x: number;
+            y: number;
+        }
+    };
+    // 1）通过【Partial】将Person最外层属性变为可选参数【address可不传，但是如果穿了address就必须传x、y】
+    const person1: Partial<Person> = {};
+    const person2: Partial<Person> = {
+        address: {
+            x: 100,
+            y: 200,
+        }
+    };
+    // 2）通过【DeepPartial】所有层级的属性都可不传
+    const person3: DeepPartial<Person> = {};
+    const person4: DeepPartial<Person> = {
+        address: {}
+    };
 }
 
 /**
- * 【infer】
- * infer 可以在条件类型中“提取”类型的某一部分，在使用的时候想获取什么类型就将infer写在什么“地方”，然后再加一个变量就可以自动的来推导。
- * 类型推导都是基于“位置”的
+ * 内置属性【required】
+ * 
+ * Required<T>：循环遍历最外面的一层属性，将属性变成必填属性。
  */
 {
-    function getObj(name: string, age: number) {
-        return {
-            name: name,
-            age: age
-        };
-    }
+    // 【类型定义】
+    type Required<T> = {
+        [K in keyof T]-?: T[K] // -?：将可选属性修饰符去掉
+    };
 
-    // 1. ReturnType. 【获取函数返回值】
-    // type ReturnType<T extends (...agrs: any) => any> = T extends (...args: any) => infer R ? R : any; 
-    type R1 = ReturnType<typeof getObj>; // 返回：{ name: string; age: number; }
-    
-    // 2. Parameters. 【获取函数参数列表】
-    // type Parameters<T extends (...args: any) => any> = T extends (...agrs: infer R) => any ? R : never;
-    type R2 = Parameters<typeof getObj>; // 返回：[name: string, age: number]
-
-
-    // 3. ConstructorParameters. 【获取构造函数的参数】
-    abstract class Person {
-        constructor(public name: string, public age: number) { }
-    }
-    // type ConstructorParameters<T extends abstract new (...args: any) => any> = T extends abstract new (...args: infer R) => any ? R : never;
-    type R3 = ConstructorParameters<typeof Person>;
-
-    // 4. InstanceType. 【获取类的实例类型】
-    // type InstanceType<T extends abstract new (...args: any) => any> = T extends abstract new (...args: any) => infer R ? R : never;
-    type R4 = InstanceType<typeof Person>;
-
-
+    // 【使用】
+    interface Person {
+        name?: string;
+        age: number;
+        address?: {
+            x: number;
+            // y?: number;
+        }
+    };
+    const person: Required<Person> = {
+        name: 'cuimm',
+        age: 20,
+        address: {
+            x: 100
+        }
+    };
 }
 
 /**
- * 内置类型实例
+ * 【Readonly】：只读
  */
 {
-    class Person {
-        constructor(public name: string, public age: number) { }
-    }
+    // 【方法定义】
+    type Readonly<T> = {
+        readonly [K in keyof T]: T[K]
+    };
 
-    function createInstance<T extends new (...args: any) => InstanceType<T>>(target: T, ...args: ConstructorParameters<T>): InstanceType<T> {
-        return new target(...args);
-    }
-
-    const person1 = createInstance(Person, 'cuimm', 10);
-    const person2 = createInstance<typeof Person>(Person, 'cuimm', 10);
+    // 【使用】
+    interface Person {
+        name: string;
+        age?: number;
+    };
+    const person: Readonly<Required<Person>> = {
+        name: 'cuimm',
+        age: 20,
+    };
+    // person.name = 'cui'; // 报错：无法为“name”赋值，因为它是只读属性。ts(2540)
 }
+
+/**
+ * 【Mutate】
+ * 
+ * 可变属性
+ */
+{
+    type Mutate<T> = {
+        -readonly [K in keyof T]: T[K]
+    };
+    // 【使用】
+    interface Person {
+        readonly name: string;
+        age?: number;
+    };
+    const person: Mutate<Readonly<Required<Person>>> = {
+        name: 'cuimm',
+        age: 20,
+    };
+    person.name = 'cui';
+}
+
+/**
+ * 【Pick】：从已有类型中挑选所需属性
+ * 
+ * 重构对象结构
+ */
+{
+    type Pick<T, K extends keyof T> = {
+        [R in K]: T[R]
+    };
+    //【示例】
+    interface Person {
+        name: string;
+        age: number;
+        address: object;
+    };
+    type PickPerson = Pick<Person, 'name' | 'age'>; // type PickPerson = { name: string; age: number; }
+    let person: PickPerson = { name: 'cuimm', age: 10 };
+}
+
+/**
+ * 【Omit】：从已有类型中排除指定属性
+ */
+{
+    type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;
+
+    //【示例】
+    interface Person {
+        name: string;
+        age: number;
+        address: object;
+    };
+    type OmitPerson = Omit<Person, 'address'>; // type OmitPerson = { name: string; age: number; }
+}
+
+/*** 
+ * 示例【mixin】
+ * 
+ * 2个对象合并 
+ */
+{
+    /* 错误定义
+    function mixin<T, K>(a: T, b: K): T & K {
+        return { ...a, ...b };
+    }
+    type name = (typeof res)['name']; // type name = never
+    */
+
+    function mixin<T, K>(a: T, b: K): Omit<T, keyof K> & K {
+        return { ...a, ...b };
+    }
+    let res = mixin(
+        { name: 'cuimm', age: 10, address: 'sd' },
+        { name: 100, gender: 'man' }
+    );
+
+    type resType = typeof res; // 直接的返回结果可读性不高，可通过范型进行重构
+    type name = (typeof res)['name']; // type name = number
+
+    // 创建一个新的类型，类型可读性更高
+    type Computed<T> = {
+        [K in keyof T]: T[K]
+    };
+    type resType2 = Computed<typeof res>;
+    /**
+     type resType2 = {
+        age: number;
+        address: string;
+        name: number;
+        gender: string;
+    }
+     */
+}
+
+/**
+ * 【Record<T, K>】
+ * 主要用来定义对象，接收2个范型，【对象键的类型和对象值的类型】
+ */
+{
+    type Record<T extends keyof any, K> = {
+        [Key in T]: K
+    };
+    const obj: Record<string, any> = { a: 1, b: "2", c: {} };
+
+
+    // 【将对象结构重新映射返回新的对象】
+    function map<T extends keyof any, K, R>(
+        obj: Record<T, K>,
+        callback: (value: K, key: T) => R
+    ) {
+        const result = {} as Record<T, R>;
+        for (let key in obj) {
+            result[key] = callback(obj[key], key);
+        }
+        return result;
+    }
+
+    // TS 是基于位置进行推导的
+    // let result: Record<"name" | "age", string>
+    // (parameter) item: string | number
+    // (parameter) key: "name" | "age"
+    let result = map({ name: 'cuimm', age: 10 }, (item, key) => {
+        return 'abc';
+    });
+}
+
 export { };
+
