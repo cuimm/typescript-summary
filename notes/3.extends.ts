@@ -45,14 +45,28 @@
 {
     /**
      * A extends B：指类型A可以分配给类型B。【针对对象，A的属性 >= B的属性】
+     * 用来判断一个类型是不是可以分配给另一个类型
      */
 
-    // 用来判断一个类型是不是可以分配给另一个类型
+    // 对象自变量
     type R1 = { a: number }
     type R11 = { a: 100, b: 'abc' } extends R1 ? true : false; // true
 
+    const r1: R1 = { a: 100 }; // 对象自变量只能指定已知属性
+
+
+    // 联合类型
     type R2 = 1 | 2 | 3;
     type R21 = 1 | 2 extends R2 ? true : false; // true
     type R22 = 1 | 2 | 3 | 4 extends R2 ? true : false; // false
+
+
+    // 类
+    class Parent {}
+    class Child extends Parent {}
+    type R3 = Child extends Parent ? true : false; // true
+
+    const child: Child = new Child();
+    const parent: Parent = child;
 }
 

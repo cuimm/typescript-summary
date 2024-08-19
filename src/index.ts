@@ -1,230 +1,223 @@
 /**
- * 内置类型
- *    基于循环的映射类型：
- *      Partial<T>：循环遍历T【最外层】的属性，将属性变成可选属性。
- *      Required<T>：循环遍历【最外层】的属性，将属性变成必填属性。
- *      Readonly<T>：只读属性。将对象最外层属性变成只读属性
- *      Mutate：可选属性。将对象最外层属性变成可选属性
+ * 类型兼容
  * 
- *      Pick<T, k>：从已有类型中挑选所需属性
- *      Omit<T, k>：从已有类型中排除指定属性
- *      Record<T, K>：主要用来定义对象，接收2个范型，【对象键的类型和对象值的类型】
- */
-
-/**
- * 内置类型【Partial】
+ * 子类型可以赋予给父类型，从结构角度出发。ts比较的不是类型的名称，而是【结构上的属性和方法】。
  * 
- * Partial<T>：循环便利T【最外层】的属性，将属性变成可选属性。
- */
-{
-    // 循环T最外层属性，将最外层属性变成可选属性
-    type Partial<T> = {
-        [K in keyof T]?: T[K]
-    }
-    // 循环T所有层级的所有属性，将全部的属性变成可选属性
-    type DeepPartial<T> = {
-        [K in keyof T]?: T[K] extends object ? Partial<T[K]> : T[K]
-    }
-
-    // 实例：
-    interface Person {
-        name: string;
-        age: number;
-        address: {
-            x: number;
-            y: number;
-        }
-    };
-    // 1）通过【Partial】将Person最外层属性变为可选参数【address可不传，但是如果穿了address就必须传x、y】
-    const person1: Partial<Person> = {};
-    const person2: Partial<Person> = {
-        address: {
-            x: 100,
-            y: 200,
-        }
-    };
-    // 2）通过【DeepPartial】所有层级的属性都可不传
-    const person3: DeepPartial<Person> = {};
-    const person4: DeepPartial<Person> = {
-        address: {}
-    };
-}
-
-/**
- * 内置属性【required】
+ * 对于函数的兼容性而言：【参数个数要少，传递的可以是父类， 返回值可以返回儿子】【少参、传入、返子】
  * 
- * Required<T>：循环遍历最外面的一层属性，将属性变成必填属性。
+ * strictFunctionTypes：false。关闭双向协变
  */
+
 {
-    // 【类型定义】
-    type Required<T> = {
-        [K in keyof T]-?: T[K] // -?：将可选属性修饰符去掉
-    };
-
-    // 【使用】
-    interface Person {
-        name?: string;
-        age: number;
-        address?: {
-            x: number;
-            // y?: number;
-        }
-    };
-    const person: Required<Person> = {
-        name: 'cuimm',
-        age: 20,
-        address: {
-            x: 100
-        }
-    };
-}
-
-/**
- * 【Readonly】：只读
- */
-{
-    // 【方法定义】
-    type Readonly<T> = {
-        readonly [K in keyof T]: T[K]
-    };
-
-    // 【使用】
-    interface Person {
-        name: string;
-        age?: number;
-    };
-    const person: Readonly<Required<Person>> = {
-        name: 'cuimm',
-        age: 20,
-    };
-    // person.name = 'cui'; // 报错：无法为“name”赋值，因为它是只读属性。ts(2540)
-}
-
-/**
- * 【Mutate】
- * 
- * 可变属性
- */
-{
-    type Mutate<T> = {
-        -readonly [K in keyof T]: T[K]
-    };
-    // 【使用】
-    interface Person {
-        readonly name: string;
-        age?: number;
-    };
-    const person: Mutate<Readonly<Required<Person>>> = {
-        name: 'cuimm',
-        age: 20,
-    };
-    person.name = 'cui';
-}
-
-/**
- * 【Pick】：从已有类型中挑选所需属性
- * 
- * 重构对象结构
- */
-{
-    type Pick<T, K extends keyof T> = {
-        [R in K]: T[R]
-    };
-    //【示例】
-    interface Person {
-        name: string;
-        age: number;
-        address: object;
-    };
-    type PickPerson = Pick<Person, 'name' | 'age'>; // type PickPerson = { name: string; age: number; }
-    let person: PickPerson = { name: 'cuimm', age: 10 };
-}
-
-/**
- * 【Omit】：从已有类型中排除指定属性
- */
-{
-    type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;
-
-    //【示例】
-    interface Person {
-        name: string;
-        age: number;
-        address: object;
-    };
-    type OmitPerson = Omit<Person, 'address'>; // type OmitPerson = { name: string; age: number; }
-}
-
-/*** 
- * 示例【mixin】
- * 
- * 2个对象合并 
- */
-{
-    /* 错误定义
-    function mixin<T, K>(a: T, b: K): T & K {
-        return { ...a, ...b };
-    }
-    type name = (typeof res)['name']; // type name = never
-    */
-
-    function mixin<T, K>(a: T, b: K): Omit<T, keyof K> & K {
-        return { ...a, ...b };
-    }
-    let res = mixin(
-        { name: 'cuimm', age: 10, address: 'sd' },
-        { name: 100, gender: 'man' }
-    );
-
-    type resType = typeof res; // 直接的返回结果可读性不高，可通过范型进行重构
-    type name = (typeof res)['name']; // type name = number
-
-    // 创建一个新的类型，类型可读性更高
-    type Computed<T> = {
-        [K in keyof T]: T[K]
-    };
-    type resType2 = Computed<typeof res>;
     /**
-     type resType2 = {
-        age: number;
-        address: string;
-        name: number;
-        gender: string;
+     1)【基础类型的兼容性】
+    obj2 = obj1 要满足：obj1的属性比obj2多【即：obj1要满足obj2要求的结构 
+    */
+    let obj: { toString(): string };
+    let str: string = 'cuimm';
+    obj = str;
+}
+
+{
+    /**
+     2)【接口的兼容性】
+    obj2 = obj1 要满足：obj1的属性比obj2多【即：obj1要满足obj2要求的结构】
+    */
+    interface IAnimal {
+        name: string;
+        age: string;
     }
+    interface IPerson {
+        name: string;
+        age: string;
+        address: string;
+    }
+    let animal!: IAnimal;
+    let person!: IPerson;
+    animal = person; // 赋值
+}
+
+{
+    /**
+    3)【函数的兼容性】
+        fn1 = fn2，要赋予的函数要满足：
+            1. 参数：【f2参数个数只能少不能多】。 
+            2. 返回值类型：【fn2必须是fn1的子类型】。【返回值必须要能正常访问fn1上的属性和方法】
+    */
+    let fn1 = (a: string, b: string): string | number => a;
+    let fn2 = (a: string): number => {
+        return 100;
+    }
+    fn1 = fn2; // 【赋值的时候，fn1的类型不变，值变化了】
+}
+
+
+class Parent {
+    house() { }
+}
+class Child extends Parent {
+    car() { }
+}
+class Grandson extends Child {
+    money() { }
+}
+
+{
+    /**
+     * 【函数的逆变与协变】
+     *      函数的【参数是逆变】，【返回值是协变】
+     * 
+     * 基于安全考虑
+     * 
+     * 在继承关系里，传递的函数：【传父】（参数是逆变的），【返子】（返回值是协变的）
+     * 传递的参数要保证是安全的，
      */
+    function fn(callback: (instance: Child) => Child) {
+        let child = new Child();
+        let ins: Child = callback(child);
+        return ins;
+    }
+
+    // 为什么传参时可以写Parent，但是不能写Grandson？【内部调用的时候传递的是Child，在拿到这个实例的时候不能访问Child访问不到的属性】【结构要兼容】
+    /*
+    报错：类型“(instance: Grandson) => Child”的参数不能赋给类型“(instance: Child) => Child”的参数。
+         参数“instance”和“instance” 的类型不兼容。
+         类型 "Child" 中缺少属性 "money"，但类型 "Grandson" 中需要该属性。
+    fn((instance: Grandson) => {
+        return new Child();
+    });
+    */
+    fn((instance: Parent): Grandson => {
+        // return new Parent();
+        return new Grandson();
+    });
+
+    /**
+     * let t1: (instance: Child) => void：是t1的类型
+     * t1 = (instance: Parent) => "" 是给t1赋值
+     * 赋值的时候要满足t1的类型
+     */
+    let t1: (instance: Child) => void = (instance: Parent) => ""; // 函数的参数是逆变的
+    let t2: (instance: Child) => Child = (instance: Child) => new Grandson(); // 函数的返回值是协变的
+    // 传递的函数：（传父（参数是逆变的），返子（返回值是协变的））
+
+    // 【对于函数的兼容性而言，参数个数要少，传递的可以是父类， 返回值可以返回儿子】
+
 }
 
 /**
- * 【Record<T, K>】
- * 主要用来定义对象，接收2个范型，【对象键的类型和对象值的类型】
+ * 推导公式
  */
 {
-    type Record<T extends keyof any, K> = {
-        [Key in T]: K
-    };
-    const obj: Record<string, any> = { a: 1, b: "2", c: {} };
-
-
-    // 【将对象结构重新映射返回新的对象】
-    function map<T extends keyof any, K, R>(
-        obj: Record<T, K>,
-        callback: (value: K, key: T) => R
-    ) {
-        const result = {} as Record<T, R>;
-        for (let key in obj) {
-            result[key] = callback(obj[key], key);
-        }
-        return result;
+    function fn(callback: (instance: Child) => Child) {
+        let child = new Child();
+        let ins: Child = callback(child);
+        return ins;
     }
 
-    // TS 是基于位置进行推导的
-    // let result: Record<"name" | "age", string>
-    // (parameter) item: string | number
-    // (parameter) key: "name" | "age"
-    let result = map({ name: 'cuimm', age: 10 }, (item, key) => {
-        return 'abc';
-    });
+    // 推导公式：
+    type Arg<T> = (arg: T) => void;
+    type Return<T> = (arg: any) => T;
+    type ArgType = Arg<Parent> extends Arg<Child> ? true : false; // true. 逆变
+    type ReturnType = Return<Grandson> extends Return<Child> ? true : false; // true. 协变
 }
+
+{
+
+    interface MyArray<T> {
+        concat(...args: T[]): T[]; // 不会对参数进行逆变检测【推荐写法】
+        //   concat: (...args: T[]) => void; // 这种方式会检测逆变【这种方式不推荐】
+    }
+
+    let arr1!: MyArray<Parent>;
+    let arr2!: MyArray<Child>;
+    // arr1 -> (...args: Parent[]): Parent[];
+    // arr2 -> (...args: Child[]): Child[];
+
+    arr1 = arr2;
+
+    // 对于类而言，有子类可以重写父类
+    // strictFunctionTypes 开启后就变成了双向协变，参数和返回值都是协变的
+
+}
+
+{
+    // 1）接口。ts 比较的是结构，结构一致即可
+    interface TT<T> { }
+
+    let o1!: TT<string>;
+    let o2!: TT<number>;
+    o2 = o1;
+
+    // 2）枚举不具备兼容性问题 （枚举会生成一个对象）
+    enum E1 { }
+    enum E2 { }
+
+    let e1!: E1;
+    let e2!: E2;
+    console.log(E1);
+    // e2 = e1;
+
+    // 3）类的兼容性【比的是属性和方法】【静态成员和构造函数不在比较的范围内】
+    class A {
+        static age: number;
+        public name!: string;
+        // protected name!: string; // name如果是受保护或者私有的，则不能兼容
+    }
+    class B {
+        public name!: string;
+        public age!: string;
+    }
+    // b只能访问name属性
+    let b: A = new B(); // 比较的是属性，不符合就不兼容. 如果类中存在私有属性或者受保护的属性，则不能兼容
+
+
+    // ts 比较类型结构的时候比较的是【属性和方法】
+    // 如果属性和方法都满足则兼容，有一些比较特殊
+
+    // 基础类型和对象类型的兼容，接口的兼容， 泛型的兼容，枚举的兼容， 类的兼容
+
+
+}
+
+/**
+    在其他语言中存在【标称类型】（根据名称来区分类型）
+    标称类型：TS中通过【交叉】类型实现标称类型
+    类型分为两种：结构化类型(structural type system) 、标称类型(nominal type system)
+ */
+/**
+ * 下面示例中，虽然 BTC，USDT 都是 number 类型，但还是想要用不同的类型表示，且不能互换，数据的值本身没什么区别，安上不同名字就是不同类型。
+ * 也就是说，标称类型系统中，两个变量是否类型兼容（可以交换赋值）取决于这两个变量显式声明的类型名字是否相同。
+ */
+{
+    // 无法区分BST和UDST
+    type BST = number;
+    type USTD = number;
+    let bst: BST = 1000;
+    let ustd: USTD = 2000;
+
+    function getVal(val: number) {
+        return val;
+    }
+    getVal(bst);
+    getVal(ustd);
+}
+
+// 标称类型
+{
+    type Normalize<T, K extends string> = T & { __flag: K }; // 使用交叉类型产生一个新的类型
+    type BST = Normalize<number, 'bst'>; // number & { __flag: "bst"; }
+    type USDT = Normalize<number, 'usdt'>; // number & { __flag: "usdt"; 
+    let bst: BST = 1000 as BST;
+    let ustd: USDT = 2000 as USDT;
+
+    function getVal(val: BST) {
+        return val;
+    }
+
+    getVal(bst);
+    // getVal(ustd); // 报错：类型“USDT”的参数不能赋给类型“BST”的参数
+}
+
 
 export { };
-

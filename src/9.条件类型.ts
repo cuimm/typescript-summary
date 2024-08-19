@@ -7,7 +7,7 @@
 
 {
     type ResStatus<T> = T extends 200 | 204 | 206 ? 'success' : 'fail'; // 状态码
-    type R1 = ResStatus<'ok'>; // 没有对T进行约束，T可以任意传值，得到的结果是fail。
+    type R1 = ResStatus<'ok'>; // fail. 没有对T进行约束，T可以任意传值，得到的结果是fail。
 
     // 对T进行约束：约束T必须是number类型
     type ResStatus2<T extends number> = T extends 200 | 204 | 206 ? 'success' : 'fail';

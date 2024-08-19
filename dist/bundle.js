@@ -2,46 +2,23 @@
     'use strict';
 
     /**
-     * 内置类型
-     *    基于循环的映射类型：
-     *      Partial<T>：循环遍历T【最外层】的属性，将属性变成可选属性。
-     *      Required<T>：循环遍历【最外层】的属性，将属性变成必填属性。
-     *      Readonly<T>：只读属性。将对象最外层属性变成只读属性
-     *      Mutate：可选属性。将对象最外层属性变成可选属性
+     * 类型兼容
      *
-     *      Pick<T, k>：从已有类型中挑选所需属性
-     *      Omit<T, k>：从已有类型中排除指定属性
-     *      Record<T, K>：主要用来定义对象，接收2个范型，【对象键的类型和对象值的类型】
-     */
-    /**
-     * 内置类型【Partial】
+     * 子类型可以赋予给父类型，从结构角度出发。ts比较的不是类型的名称，而是【结构上的属性和方法】。
      *
-     * Partial<T>：循环便利T【最外层】的属性，将属性变成可选属性。
-     */
-    /***
-     * 示例【mixin】
+     * 对于函数的兼容性而言：【参数个数要少，传递的可以是父类， 返回值可以返回儿子】【少参、传入、返子】
      *
-     * 2个对象合并
+     * strictFunctionTypes：false。关闭双向协变
      */
     {
-        /* 错误定义
-        function mixin<T, K>(a: T, b: K): T & K {
-            return { ...a, ...b };
-        }
-        type name = (typeof res)['name']; // type name = never
-        */
-        function mixin(a, b) {
-            return Object.assign(Object.assign({}, a), b);
-        }
-        mixin({ name: 'cuimm', age: 10, address: 'sd' }, { name: 100, gender: 'man' });
-        /**
-         type resType2 = {
-            age: number;
-            address: string;
-            name: number;
-            gender: string;
-        }
-         */
+        // 2）枚举不具备兼容性问题 （枚举会生成一个对象）
+        let E1;
+        (function (E1) {
+        })(E1 || (E1 = {}));
+        console.log(E1);
+        // ts 比较类型结构的时候比较的是【属性和方法】
+        // 如果属性和方法都满足则兼容，有一些比较特殊
+        // 基础类型和对象类型的兼容，接口的兼容， 泛型的兼容，枚举的兼容， 类的兼容
     }
 
 })();
