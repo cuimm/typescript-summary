@@ -193,7 +193,7 @@
 {
     abstract class Animal {
         static habitat = '地球';
-        
+
         // 抽象属性
         abstract address: string;
 
@@ -219,7 +219,7 @@
             throw new Error("Method not implemented.");
         }
         // play() {} // 子类如果按照实例方法实现会报错：类“Animal”将“play”定义为实例成员属性，但扩展类“Cat”将其定义为实例成员函数。
-        play: () => void = () => {}; // 按照实例属性方式直接赋值，也可以在构造函数中赋值
+        play: () => void = () => { }; // 按照实例属性方式直接赋值，也可以在构造函数中赋值
 
         drink() {
             console.log('drink~~~');
@@ -228,7 +228,7 @@
 
     console.log(Cat.habitat);
     console.log(new Cat('Tom', 10, 'SD'));
-    
+
 }
 
 

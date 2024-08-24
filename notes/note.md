@@ -32,3 +32,21 @@ type Mutate<T> = {
 14. Record<T, K>：主要用来定义对象，接收2个范型，【对象键的类型和对象值的类型】
 
 
+
+## 语法
+1. declare var 声明全局变量
+2. declare function 声明全局方法
+3. declare class 声明全局类
+4. declare enum 声明全局枚举类型
+5. declare namespace 声明（含有子属性的）全局对象
+6. interface 和 type 声明全局类型
+7. export 导出变量
+8. export namespace 导出（含有子属性的）对象
+9. export default ES6 默认导出
+10. export = commonjs 导出模块
+11. export as namespace UMD 库声明全局变量
+12. declare global 扩展全局变量
+13. declare module 扩展模块
+14. ///  三斜线指令
+
+

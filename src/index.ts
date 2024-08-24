@@ -1,223 +1,197 @@
 /**
- * 类型兼容
+ * 【类型装饰器】
  * 
- * 子类型可以赋予给父类型，从结构角度出发。ts比较的不是类型的名称，而是【结构上的属性和方法】。
+ * 装饰器本身就是一个【函数】，只能在【类】中使用。可以使用在【类本身、类的成员】上。
  * 
- * 对于函数的兼容性而言：【参数个数要少，传递的可以是父类， 返回值可以返回儿子】【少参、传入、返子】
- * 
- * strictFunctionTypes：false。关闭双向协变
+ * 装饰器的分类：
+ *  类的装饰器
+ *  方法装饰器
+ *  属性装饰器
+ *  访问装饰器
+ *  参数装饰器
  */
 
+/**
+ * 【1. 类的装饰器】
+ *  TS默认不支持类的装饰器，需配置experimentalDecorators:true。
+ *  1）给类进行扩展
+ *  2）返回子类去重写父类
+ * 
+ * 【一般不会通过装饰器去扩展累的属性和方法，因为扩展后原来没有定义的方法无法直接访问到，需要通过interface、namespace来进行扩展】
+ */
 {
-    /**
-     1)【基础类型的兼容性】
-    obj2 = obj1 要满足：obj1的属性比obj2多【即：obj1要满足obj2要求的结构 
-    */
-    let obj: { toString(): string };
-    let str: string = 'cuimm';
-    obj = str;
-}
-
-{
-    /**
-     2)【接口的兼容性】
-    obj2 = obj1 要满足：obj1的属性比obj2多【即：obj1要满足obj2要求的结构】
-    */
-    interface IAnimal {
-        name: string;
-        age: string;
+    /***** 给类通过装饰器进行扩展时，扩展后的属性无法提示，需要类型断言。 *****/
+    // 解决：通过interface对类类型扩展。
+    interface Person {
+        run(): void
     }
-    interface IPerson {
-        name: string;
-        age: string;
-        address: string;
-    }
-    let animal!: IAnimal;
-    let person!: IPerson;
-    animal = person; // 赋值
-}
 
-{
     /**
-    3)【函数的兼容性】
-        fn1 = fn2，要赋予的函数要满足：
-            1. 参数：【f2参数个数只能少不能多】。 
-            2. 返回值类型：【fn2必须是fn1的子类型】。【返回值必须要能正常访问fn1上的属性和方法】
-    */
-    let fn1 = (a: string, b: string): string | number => a;
-    let fn2 = (a: string): number => {
-        return 100;
-    }
-    fn1 = fn2; // 【赋值的时候，fn1的类型不变，值变化了】
-}
-
-
-class Parent {
-    house() { }
-}
-class Child extends Parent {
-    car() { }
-}
-class Grandson extends Child {
-    money() { }
-}
-
-{
-    /**
-     * 【函数的逆变与协变】
-     *      函数的【参数是逆变】，【返回值是协变】
-     * 
-     * 基于安全考虑
-     * 
-     * 在继承关系里，传递的函数：【传父】（参数是逆变的），【返子】（返回值是协变的）
-     * 传递的参数要保证是安全的，
+     * Person类的修饰符【给类扩展：方法/属性】
+     * @param target 类本身
      */
-    function fn(callback: (instance: Child) => Child) {
-        let child = new Child();
-        let ins: Child = callback(child);
-        return ins;
-    }
+    const AnimalClassDecorator = <T extends new (...arg: any) => any>(target: T) => {
+        (target as any).gender = 'woman'; // 静态属性
+        (target as any).getGender = function () {
+            return this.gender; // 静态方法。这里的this是类本身
+        }
+        // 添加实例属性和方法
+        Object.assign(target.prototype, {
+            age: 20,
+            run() {
+                console.log('running...');
+            },
+        });
+    };
 
-    // 为什么传参时可以写Parent，但是不能写Grandson？【内部调用的时候传递的是Child，在拿到这个实例的时候不能访问Child访问不到的属性】【结构要兼容】
-    /*
-    报错：类型“(instance: Grandson) => Child”的参数不能赋给类型“(instance: Child) => Child”的参数。
-         参数“instance”和“instance” 的类型不兼容。
-         类型 "Child" 中缺少属性 "money"，但类型 "Grandson" 中需要该属性。
-    fn((instance: Grandson) => {
-        return new Child();
-    });
-    */
-    fn((instance: Parent): Grandson => {
-        // return new Parent();
-        return new Grandson();
-    });
+    @AnimalClassDecorator
+    class Person { }
+    const person = new Person();
 
+    console.log('age: ', (person as any).age); // interface中没有扩展age属性，此处需要类型断言
+    console.log('run: ', person.run()); // interface扩展了run属性，此处可以直接点出来，无需类型断言
+    console.log('getGender: ', (Person as any).getGender());
+    console.log('person', person);
+}
+{
     /**
-     * let t1: (instance: Child) => void：是t1的类型
-     * t1 = (instance: Parent) => "" 是给t1赋值
-     * 赋值的时候要满足t1的类型
+     * 返回子类去重写父类
+     * @param target 类本身
+     * @returns 
      */
-    let t1: (instance: Child) => void = (instance: Parent) => ""; // 函数的参数是逆变的
-    let t2: (instance: Child) => Child = (instance: Child) => new Grandson(); // 函数的返回值是协变的
-    // 传递的函数：（传父（参数是逆变的），返子（返回值是协变的））
+    function OverrideAnimalDecorator(target: typeof Animal): void | typeof Animal {
+        return class extends target {
+            eat() {
+                console.log('override eat...');
+            }
+        }
+    }
 
-    // 【对于函数的兼容性而言，参数个数要少，传递的可以是父类， 返回值可以返回儿子】
-
+    // 返回子类去重写父类
+    @OverrideAnimalDecorator
+    class Animal {
+        eat() {
+            console.log('animal eat...');
+        }
+    }
+    const animal = new Animal();
+    console.log('animal: ', animal.eat());
 }
+
+console.log('----------');
 
 /**
- * 推导公式
+ * 【2. 方法装饰器】
+ * 返回类型：MethodDecorator
  */
 {
-    function fn(callback: (instance: Child) => Child) {
-        let child = new Child();
-        let ins: Child = callback(child);
-        return ins;
+    // 方法的装饰器：是否可被枚举【返回类型：MethodDecorator】
+    // function Enum(isEnum: boolean): (target: Animal, propertyKey: 'eat' | 'run', descriptor: TypedPropertyDescriptor<() => void>) => void | TypedPropertyDescriptor<() => void> {
+    function Enum(isEnum: boolean): MethodDecorator {
+        return function (target: object, propertyKey: string | symbol, descriptor: any) {
+            // descriptor.configurable // 属性是否可以删除
+            // descriptor.writable // 是否可被重写
+            // descriptor.value // 当前函数的值
+            descriptor.enumerable = isEnum; // 是否可被重写
+
+            // 【切片编程】
+            const originaVal = descriptor.value;
+            descriptor.value = function () {
+                console.log('prev call...');
+                return originaVal.call(this, ...arguments); // 调用原有方法
+            }
+        }
+    }
+    class Animal {
+        @Enum(true)
+        eat() {
+            console.log('eat...');
+        }
+        @Enum(false)
+        run() {
+            console.log('running...');
+        }
     }
 
-    // 推导公式：
-    type Arg<T> = (arg: T) => void;
-    type Return<T> = (arg: any) => T;
-    type ArgType = Arg<Parent> extends Arg<Child> ? true : false; // true. 逆变
-    type ReturnType = Return<Grandson> extends Return<Child> ? true : false; // true. 协变
+    const animal = new Animal();
+    console.log('animal: ', animal);
+    animal.eat();
 }
 
-{
-
-    interface MyArray<T> {
-        concat(...args: T[]): T[]; // 不会对参数进行逆变检测【推荐写法】
-        //   concat: (...args: T[]) => void; // 这种方式会检测逆变【这种方式不推荐】
-    }
-
-    let arr1!: MyArray<Parent>;
-    let arr2!: MyArray<Child>;
-    // arr1 -> (...args: Parent[]): Parent[];
-    // arr2 -> (...args: Child[]): Child[];
-
-    arr1 = arr2;
-
-    // 对于类而言，有子类可以重写父类
-    // strictFunctionTypes 开启后就变成了双向协变，参数和返回值都是协变的
-
-}
-
-{
-    // 1）接口。ts 比较的是结构，结构一致即可
-    interface TT<T> { }
-
-    let o1!: TT<string>;
-    let o2!: TT<number>;
-    o2 = o1;
-
-    // 2）枚举不具备兼容性问题 （枚举会生成一个对象）
-    enum E1 { }
-    enum E2 { }
-
-    let e1!: E1;
-    let e2!: E2;
-    console.log(E1);
-    // e2 = e1;
-
-    // 3）类的兼容性【比的是属性和方法】【静态成员和构造函数不在比较的范围内】
-    class A {
-        static age: number;
-        public name!: string;
-        // protected name!: string; // name如果是受保护或者私有的，则不能兼容
-    }
-    class B {
-        public name!: string;
-        public age!: string;
-    }
-    // b只能访问name属性
-    let b: A = new B(); // 比较的是属性，不符合就不兼容. 如果类中存在私有属性或者受保护的属性，则不能兼容
-
-
-    // ts 比较类型结构的时候比较的是【属性和方法】
-    // 如果属性和方法都满足则兼容，有一些比较特殊
-
-    // 基础类型和对象类型的兼容，接口的兼容， 泛型的兼容，枚举的兼容， 类的兼容
-
-
-}
+console.log('**********************');
 
 /**
-    在其他语言中存在【标称类型】（根据名称来区分类型）
-    标称类型：TS中通过【交叉】类型实现标称类型
-    类型分为两种：结构化类型(structural type system) 、标称类型(nominal type system)
+ * 【3. 属性装饰器】
+ * 不同的ES版本，会有不同的解析。
  */
+{
+    function Upper(isUpper: boolean): PropertyDecorator {
+        return function (target, propertyKey) {
+            /**
+             * 如果在ES2015中设置原型属性，后续赋值的时候会触发原型属性。
+             * 如果在ESNext中，则无法触发。
+             */
+            let val: any;
+            Object.defineProperty(target, propertyKey, {
+                get() {
+                    return isUpper ? val.toUpperCase() : val;
+                },
+                set(newVal) {
+                    val = newVal;
+                }
+            });
+
+        }
+    }
+    class Animal {
+        @Upper(true)
+        public name: string = 'animal';
+        @Upper(false)
+        public gender: string = 'gender';
+    }
+
+    const animal = new Animal();
+    console.log(animal.name); // ANIMAL
+    console.log(animal.gender); // gender
+}
+
+console.log('------------------------');
+
+
 /**
- * 下面示例中，虽然 BTC，USDT 都是 number 类型，但还是想要用不同的类型表示，且不能互换，数据的值本身没什么区别，安上不同名字就是不同类型。
- * 也就是说，标称类型系统中，两个变量是否类型兼容（可以交换赋值）取决于这两个变量显式声明的类型名字是否相同。
+ * 【4. 属性装饰器】
  */
 {
-    // 无法区分BST和UDST
-    type BST = number;
-    type USTD = number;
-    let bst: BST = 1000;
-    let ustd: USTD = 2000;
+    function ValToUpper(target: any, propertyKey: string, descriptor: any) {        
+        // 拦截set
+        let originalSet = descriptor.set;
+        descriptor.set = function(newVal: string) {
+            console.log(this); // Animal
+            return originalSet.call(this, newVal.toUpperCase());
+        }
 
-    function getVal(val: number) {
-        return val;
-    }
-    getVal(bst);
-    getVal(ustd);
-}
-
-// 标称类型
-{
-    type Normalize<T, K extends string> = T & { __flag: K }; // 使用交叉类型产生一个新的类型
-    type BST = Normalize<number, 'bst'>; // number & { __flag: "bst"; }
-    type USDT = Normalize<number, 'usdt'>; // number & { __flag: "usdt"; 
-    let bst: BST = 1000 as BST;
-    let ustd: USDT = 2000 as USDT;
-
-    function getVal(val: BST) {
-        return val;
+        // 拦截get
+        let originalGet = descriptor.get;
+        descriptor.get = function() {
+            return '$' + originalGet.call(this) + '$';
+        }
     }
 
-    getVal(bst);
-    // getVal(ustd); // 报错：类型“USDT”的参数不能赋给类型“BST”的参数
-}
+    class Animal {
+        private _name!: string;
 
+        @ValToUpper
+        get name() {
+            return this._name;
+        }
+        set name(newVal) {
+            this._name = newVal;
+        }
+    }
+
+    const animal = new Animal();
+    animal.name = 'cuimm';
+    console.log(animal.name);
+}
 
 export { };
