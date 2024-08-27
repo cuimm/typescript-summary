@@ -3713,10 +3713,17 @@
       url: baseUrl + '/get',
       method: 'get',
       params: person,
+      headers: {
+          'x-token': 'x-token',
+          'x-name': 'x-name',
+          xxx: 'aaa',
+      }
   };
-  axios(requestConfig).then((response) => {
+  axios(requestConfig)
+      .then((response) => {
       console.log(response);
-  }).catch(error => {
+  })
+      .catch((error) => {
       console.log('error: ', error);
   });
 

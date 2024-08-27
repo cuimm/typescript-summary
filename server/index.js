@@ -12,7 +12,7 @@ app.use(function (req, res, next) {
   res.set({
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type,name',
+    'Access-Control-Allow-Headers': 'Content-Type,name,*',
     'Access-Control-Allow-Credentials': true,
   })
   if (req.method === 'OPTIONS') {

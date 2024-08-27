@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from './axios'
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 
 // 基础访问路径
 const baseUrl = 'http://localhost:8088'
@@ -16,6 +16,11 @@ const requestConfig: AxiosRequestConfig = {
   url: baseUrl + '/get',
   method: 'get',
   params: person,
+  headers: {
+    'x-token': 'x-token',
+    'x-name': 'x-name',
+    xxx:'aaa',
+  }
 }
 
 axios(requestConfig)
