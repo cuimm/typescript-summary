@@ -30,15 +30,15 @@ app.post('/post', function (req, res) {
 })
 
 app.post('/post_timeout', function (req, res) {
-  const { timeout } = req.query
+  let { timeout } = req.query
   timeout = timeout ? parseInt(timeout) : 0
   setTimeout(() => {
     res.json(req.body)
   }, timeout)
 })
 
-app.post('/post_status', function (req, res) {
-  const { code } = req.query
+app.post('/post_status', function (req, res) {  
+  let { code } = req.query
   code = code ? parseInt(code) : 200
   res.statusCode = code
   res.json(req.body)

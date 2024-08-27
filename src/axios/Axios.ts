@@ -8,10 +8,12 @@ class Axios {
   }
   dispatchRequest<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return new Promise((resolve, reject) => {
-      let { url, method, params, headers } = config
+      let { url, method, params, data, headers, timeout } = config
 
-      const request = new XMLHttpRequest() // 1. 创建XMLHttpRequest对象
+      // 1. 创建XMLHttpRequest对象
+      const request = new XMLHttpRequest()
 
+      // 处理请求字符串
       if (params) {
         if (typeof params === 'object') {
           params = qs.stringify(params)
@@ -19,8 +21,10 @@ class Axios {
         url += (url?.includes('?') ? '&' : '?') + params
       }
 
-      request.open(method, url!, true) // 2. 创建链接
+      // 2. 创建链接
+      request.open(method, url!, true)
 
+      // 处理headers
       if (headers) {
         for (let key in headers) {
           request.setRequestHeader(key, headers[key])
@@ -28,6 +32,18 @@ class Axios {
       }
 
       request.responseType = 'json'
+
+      // 处理请求体
+      let requestBody: null | string = null
+      if (data) {
+        requestBody = JSON.stringify(data)
+      }
+
+      // 监听错误（网络异常）
+      request.onerror = function () {
+        reject('net::ERR_INTERNET_DISCONNECTED')
+      }
+
       request.onreadystatechange = function () {
         // 请求发送成功。status:0 表示请求未发送或网络异常
         if (request.readyState === 4 && request.status !== 0) {
@@ -42,11 +58,20 @@ class Axios {
             }
             resolve(response)
           } else {
-            reject('axios error: request failed with status code' + request.status)
+            reject('axios error: request failed with status code ' + request.status)
           }
         }
       }
-      request.send() // 3. 发送请求
+
+      if (timeout) {
+        request.timeout = timeout;
+        request.ontimeout = function() {
+            reject(`timeout of ${timeout}ms exceeded`);
+        }
+      }
+
+      // 3. 发送请求
+      request.send(requestBody)
     })
   }
 }

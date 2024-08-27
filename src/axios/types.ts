@@ -4,7 +4,9 @@ export interface AxiosRequestConfig {
   url?: string
   method: Methods
   params?: any
+  data?: Record<string, any>
   headers?: Record<string, any>
+  timeout?: number
 }
 
 export interface AxiosResponse<T = any> {
