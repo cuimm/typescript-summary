@@ -63,6 +63,7 @@ class Axios {
         }
       }
 
+      // 处理超时
       if (timeout) {
         request.timeout = timeout;
         request.ontimeout = function() {
