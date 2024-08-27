@@ -24,8 +24,11 @@ type R2 = Computed<T2>;
  type R2 = "prototype" | "getPrototypeOf" | "getOwnPropertyDescriptor" | "getOwnPropertyNames" | "create" | "defineProperty" | "defineProperties" | "seal" | "freeze" | "preventExtensions" | ... 11 more ... | "fromEntries"
  */
 
- type T3 = keyof Object; // type T3 = keyof Object
- type R3 = Computed<T3>;
+type T3 = keyof Object; // type T3 = keyof Object
+type R3 = Computed<T3>;
 /**
  type R3 = "constructor" | "toString" | "toLocaleString" | "valueOf" | "hasOwnProperty" | "isPrototypeOf" | "propertyIsEnumerable"
  */
+
+
+export { };

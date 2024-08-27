@@ -3,10 +3,11 @@
  */
 
 // 将对象的指定属性变成可选属性
-type PartialPropsOptional<T extends object, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
+export type PartialPropsOptional<T extends object, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 
 
-// case 
+
+/************************ case ************************/
 interface Person {
     name: string;
     age: number;
@@ -18,7 +19,6 @@ type Computed<T> = {
 }
 
 type R = Computed<PartialPropsOptional<Person, 'age' | 'address'>>;
-
 /**
     type R = {
         age?: number | undefined;

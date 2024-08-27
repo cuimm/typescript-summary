@@ -25,7 +25,7 @@ type Mutate<T> = {
 8. Partial<T>：循环遍历T【最外层】的属性，将属性变成可选属性。
 9. Required<T>：循环遍历【最外层】的属性，将属性变成必填属性。
 10. Readonly<T>：只读属性。将对象最外层属性变成只读属性
-11. Mutate<T>：可选属性。将对象最外层属性变成可选属性
+11. Mutate<T>：可变属性。将对象最外层属性去掉readonly
 
 12. Pick<T, k>：从已有类型中挑选所需属性
 13. Omit<T, k>：从已有类型中排除指定属性
@@ -49,4 +49,29 @@ type Mutate<T> = {
 13. declare module 扩展模块
 14. ///  三斜线指令
 
+
+## 整理
+> 判断两个类型是否严格一致
+```
+type isEqual<T, U> = 
+    [T] extends [U]
+    ? [U] extends [T] 
+        ? keyof T extends keyof U 
+            ? keyof U extends keyof T 
+                ? true 
+                : false 
+            : false
+        : false
+    : false;
+```
+
+> 元组循环
+> 元组的`number`属性返回联合类型，可以用来循环元组的每一项。
+```
+type X = ['MaxOs', 'Windows', 'Linux'][number];
+```
+返回
+```
+type X = "MaxOs" | "Windows" | "Linux";
+```
 

@@ -102,7 +102,7 @@
     // type NonNullable<T> = T & {};
     // type R31 = null & {}; // never
     // type R32 = undefined & {}; // never
-    type R3 = NonNullable<1 | 2 | null | undefined>;
+    type R3 = NonNullable<1 | 2 | null | undefined>; // 1 | 2
 }
 
 /**
