@@ -16,7 +16,8 @@ export default {
     },
     plugins: [
         nodeResolve({
-            extensions: ['.js', '.ts']
+            extensions: ['.js', '.ts'],
+            browser: true, // 当前代码是在浏览器中使用的
         }),
         ts({
             tsconfig: path.resolve(__dirname, 'tsconfig.json')
