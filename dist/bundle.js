@@ -2430,9 +2430,9 @@
 	    constructor() {
 	        this.interceptors = [];
 	    }
-	    use(onFullfilled, onRejected) {
+	    use(onFulfilled, onRejected) {
 	        this.interceptors.push({
-	            onFullfilled,
+	            onFulfilled,
 	            onRejected,
 	        });
 	        return this.interceptors.length - 1;
@@ -2452,8 +2452,21 @@
 	        };
 	    }
 	    request(config) {
-	        console.log(111, this.interceptors);
-	        return this.dispatchRequest(config);
+	        // 构建promise执行链【1.请求拦截器 - 2.真正的请求 - 3.响应拦截器】
+	        const promiseChain = [{ onFulfilled: this.dispatchRequest }];
+	        this.interceptors.request.interceptors.forEach((item) => {
+	            item && promiseChain.unshift(item);
+	        });
+	        this.interceptors.response.interceptors.forEach((item) => {
+	            item && promiseChain.push(item);
+	        });
+	        // 通过promise链将所有的拦截器和请求放到一起
+	        let promise = Promise.resolve(config);
+	        while (promiseChain.length) {
+	            const { onFulfilled, onRejected } = promiseChain.shift();
+	            promise = promise.then(onFulfilled, onRejected);
+	        }
+	        return promise;
 	    }
 	    dispatchRequest(config) {
 	        return new Promise((resolve, reject) => {
@@ -2551,7 +2564,7 @@
 	    },
 	    timeout: 1000,
 	};
-	// 【请求拦截器】按照代码顺序从下到上依次执行。【请求拦截器2 => 请求拦截器1】【最终x-name执行结果为x-name-hello-cuimm】
+	// 【请求拦截器】按照代码顺序从下到上依次执行。【请求拦截器2 => 请求拦截器1】【不取消r1时，最终x-name执行结果为x-name-hello-cuimm】
 	// 请求拦截器1
 	const r1 = axios.interceptors.request.use((config) => {
 	    config.headers['x-name'] += '-cuimm';
@@ -2568,7 +2581,7 @@
 	    });
 	});
 	axios.interceptors.request.eject(r1); // 取消r1的拦截器
-	// 【响应拦截器】按照代码顺序从上向下执行【响应拦截器1 => 响应拦截器2 => 响应拦截器3】【最终response.data.name结果为：cuimm-a-b-c】
+	// 【响应拦截器】按照代码顺序从上向下执行【响应拦截器1 => 响应拦截器2 => 响应拦截器3】【不取消response1时，最终response.data.name结果为：cuimm-a-b-c】
 	// 响应拦截器1
 	const response1 = axios.interceptors.response.use((response) => {
 	    response.data['name'] += '-a';

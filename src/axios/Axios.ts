@@ -1,18 +1,46 @@
 import qs from 'qs'
 import parseHeaders from 'parse-headers'
-import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from './types'
-import AxiosInterceptorManager from './AxiosInterceptorManager'
+import {
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from './types'
+import AxiosInterceptorManager, { Interceptor } from './AxiosInterceptorManager'
 
 class Axios {
   public interceptors = {
     request: new AxiosInterceptorManager<InternalAxiosRequestConfig>(),
     response: new AxiosInterceptorManager<AxiosResponse>(),
   }
+
   request<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    console.log(111, this.interceptors);
-    
-    return this.dispatchRequest(config)
+    // 构建promise执行链【1.请求拦截器 - 2.真正的请求 - 3.响应拦截器】
+    const promiseChain: (
+      | Interceptor<InternalAxiosRequestConfig>
+      | Interceptor<AxiosResponse>
+    )[] = [{ onFulfilled: this.dispatchRequest }]
+
+    this.interceptors.request.interceptors.forEach((item) => {
+      item && promiseChain.unshift(item)
+    })
+
+    this.interceptors.response.interceptors.forEach((item) => {
+      item && promiseChain.push(item)
+    })
+
+    // 通过promise链将所有的拦截器和请求放到一起
+    let promise = Promise.resolve(config)
+    while (promiseChain.length) {
+      const { onFulfilled, onRejected } = promiseChain.shift()!
+      promise = promise.then(
+        onFulfilled as (v: AxiosRequestConfig | AxiosResponse) => any,
+        onRejected
+      )
+    }
+
+    return promise as Promise<AxiosResponse<T>>
   }
+
   dispatchRequest<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return new Promise((resolve, reject) => {
       let { url, method, params, data, headers, timeout } = config
@@ -29,7 +57,7 @@ class Axios {
       }
 
       // 2. 创建链接
-      request.open(method, url!, true)
+      request.open(method!, url!, true)
 
       // 处理headers
       if (headers) {
@@ -65,7 +93,9 @@ class Axios {
             }
             resolve(response)
           } else {
-            reject('axios error: request failed with status code ' + request.status)
+            reject(
+              'axios error: request failed with status code ' + request.status
+            )
           }
         }
       }

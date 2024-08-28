@@ -28,7 +28,7 @@ const requestConfig: AxiosRequestConfig = {
   timeout: 1000,
 }
 
-// 【请求拦截器】按照代码顺序从下到上依次执行。【请求拦截器2 => 请求拦截器1】【最终x-name执行结果为x-name-hello-cuimm】
+// 【请求拦截器】按照代码顺序从下到上依次执行。【请求拦截器2 => 请求拦截器1】【不取消r1时，最终x-name执行结果为x-name-hello-cuimm】
 // 请求拦截器1
 const r1 = axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   config.headers['x-name'] += '-cuimm'
@@ -46,7 +46,7 @@ axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 })
 axios.interceptors.request.eject(r1) // 取消r1的拦截器
 
-// 【响应拦截器】按照代码顺序从上向下执行【响应拦截器1 => 响应拦截器2 => 响应拦截器3】【最终response.data.name结果为：cuimm-a-b-c】
+// 【响应拦截器】按照代码顺序从上向下执行【响应拦截器1 => 响应拦截器2 => 响应拦截器3】【不取消response1时，最终response.data.name结果为：cuimm-a-b-c】
 // 响应拦截器1
 const response1 = axios.interceptors.response.use((response: AxiosResponse) => {
   response.data['name'] += '-a'

@@ -4,7 +4,7 @@ export type Methods = 'get' | 'GET' | 'post' | 'POST' | 'put' | 'PUT' | 'delete'
 
 export interface AxiosRequestConfig {
   url?: string
-  method: Methods
+  method?: Methods
   params?: any
   data?: Record<string, any>
   headers?: Record<string, any>
