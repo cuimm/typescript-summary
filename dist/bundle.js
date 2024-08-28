@@ -2426,8 +2426,33 @@
 
 	var parseHeaders$1 = /*@__PURE__*/getDefaultExportFromCjs(parseHeaders);
 
+	class AxiosInterceptorManager {
+	    constructor() {
+	        this.interceptors = [];
+	    }
+	    use(onFullfilled, onRejected) {
+	        this.interceptors.push({
+	            onFullfilled,
+	            onRejected,
+	        });
+	        return this.interceptors.length - 1;
+	    }
+	    eject(id) {
+	        if (this.interceptors[id]) {
+	            this.interceptors[id] = null;
+	        }
+	    }
+	}
+
 	class Axios {
+	    constructor() {
+	        this.interceptors = {
+	            request: new AxiosInterceptorManager(),
+	            response: new AxiosInterceptorManager(),
+	        };
+	    }
 	    request(config) {
+	        console.log(111, this.interceptors);
 	        return this.dispatchRequest(config);
 	    }
 	    dispatchRequest(config) {
@@ -2496,7 +2521,10 @@
 	    // 1. 创建Axios的实例
 	    const context = new Axios();
 	    // 2. 获取request方法，并让request的this绑定为当前Axios的实例
-	    const instance = Axios.prototype.request.bind(context);
+	    let instance = Axios.prototype.request.bind(context);
+	    // context.interceptors.request.use
+	    // context.interceptors.response.use
+	    instance = Object.assign(instance, context);
 	    // 3. 返回instance
 	    return instance;
 	}
@@ -2509,13 +2537,13 @@
 	    age: 30,
 	};
 	const requestConfig = {
-	    // url: baseUrl + '/get',
+	    url: baseUrl + '/get',
 	    // url: baseUrl + '/post',
 	    // url: baseUrl + '/post_status?code=404',
-	    url: baseUrl + '/post_timeout?timeout=3000',
-	    method: 'post',
-	    //   params: person,
-	    data: person,
+	    // url: baseUrl + '/post_timeout?timeout=3000',
+	    method: 'get',
+	    params: person,
+	    // data: person,
 	    headers: {
 	        'Content-Type': 'application/json',
 	        'x-token': 'x-token',
@@ -2523,6 +2551,40 @@
 	    },
 	    timeout: 1000,
 	};
+	// 【请求拦截器】按照代码顺序从下到上依次执行。【请求拦截器2 => 请求拦截器1】【最终x-name执行结果为x-name-hello-cuimm】
+	// 请求拦截器1
+	const r1 = axios.interceptors.request.use((config) => {
+	    config.headers['x-name'] += '-cuimm';
+	    return config;
+	});
+	// 请求拦截器2
+	axios.interceptors.request.use((config) => {
+	    // 此处请求拦截器会等待1s后在往下执行
+	    return new Promise((resolve, reject) => {
+	        setTimeout(() => {
+	            config.headers['x-name'] += '-hello';
+	            resolve(config);
+	        }, 1000);
+	    });
+	});
+	axios.interceptors.request.eject(r1); // 取消r1的拦截器
+	// 【响应拦截器】按照代码顺序从上向下执行【响应拦截器1 => 响应拦截器2 => 响应拦截器3】【最终response.data.name结果为：cuimm-a-b-c】
+	// 响应拦截器1
+	const response1 = axios.interceptors.response.use((response) => {
+	    response.data['name'] += '-a';
+	    return response;
+	});
+	// 响应拦截器2
+	axios.interceptors.response.use((response) => {
+	    response.data['name'] += '-b';
+	    return response;
+	});
+	// 响应拦截器3
+	axios.interceptors.response.use((response) => {
+	    response.data['name'] += '-c';
+	    return response;
+	});
+	axios.interceptors.response.eject(response1); // 取消响应拦截器
 	axios(requestConfig)
 	    .then((response) => {
 	    console.log(response);

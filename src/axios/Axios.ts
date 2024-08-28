@@ -1,9 +1,16 @@
 import qs from 'qs'
 import parseHeaders from 'parse-headers'
-import { AxiosRequestConfig, AxiosResponse } from './types'
+import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from './types'
+import AxiosInterceptorManager from './AxiosInterceptorManager'
 
 class Axios {
+  public interceptors = {
+    request: new AxiosInterceptorManager<InternalAxiosRequestConfig>(),
+    response: new AxiosInterceptorManager<AxiosResponse>(),
+  }
   request<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    console.log(111, this.interceptors);
+    
     return this.dispatchRequest(config)
   }
   dispatchRequest<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
@@ -65,9 +72,9 @@ class Axios {
 
       // 处理超时
       if (timeout) {
-        request.timeout = timeout;
-        request.ontimeout = function() {
-            reject(`timeout of ${timeout}ms exceeded`);
+        request.timeout = timeout
+        request.ontimeout = function () {
+          reject(`timeout of ${timeout}ms exceeded`)
         }
       }
 
