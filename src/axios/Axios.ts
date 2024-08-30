@@ -108,6 +108,14 @@ class Axios {
         }
       }
 
+      // 取消请求
+      if (config.cancelToken) {
+        config.cancelToken.then((message) => {
+          request.abort() // 终止请求
+          reject(message)
+        })
+      }
+
       // 3. 发送请求
       request.send(requestBody)
     })

@@ -1,6 +1,10 @@
 import AxiosInterceptorManager from "./AxiosInterceptorManager"
+import { CancelTokenStatic, isCancel } from "./CancelToken"
 
 export type Methods = 'get' | 'GET' | 'post' | 'POST' | 'put' | 'PUT' | 'delete' | 'DELETE'
+
+// 获取类类型中<实例方法的返回值>的属性的类型
+export type CancelToken = ReturnType<CancelTokenStatic['source']>['token']
 
 export interface AxiosRequestConfig {
   url?: string
@@ -9,6 +13,7 @@ export interface AxiosRequestConfig {
   data?: Record<string, any>
   headers?: Record<string, any>
   timeout?: number
+  cancelToken?: CancelToken
 }
 
 export interface InternalAxiosRequestConfig extends AxiosRequestConfig {
@@ -30,4 +35,6 @@ export interface AxiosInstance {
         request: AxiosInterceptorManager<InternalAxiosRequestConfig>,
         response: AxiosInterceptorManager<AxiosResponse>,
     }
+    CancelToken: CancelTokenStatic
+    isCancel: typeof isCancel // 获取函数的类型定义
 }

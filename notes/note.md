@@ -75,3 +75,9 @@ type X = ['MaxOs', 'Windows', 'Linux'][number];
 type X = "MaxOs" | "Windows" | "Linux";
 ```
 
+
+> 一些写法
+```
+import type a from './a.ts' 导入类型
+export type { a as default} 按照类型导出
+```

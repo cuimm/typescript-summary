@@ -2524,9 +2524,45 @@
 	                    reject(`timeout of ${timeout}ms exceeded`);
 	                };
 	            }
+	            // 取消请求
+	            if (config.cancelToken) {
+	                config.cancelToken.then((message) => {
+	                    request.abort(); // 终止请求
+	                    reject(message);
+	                });
+	            }
 	            // 3. 发送请求
 	            request.send(requestBody);
 	        });
+	    }
+	}
+
+	/**
+	 * 当前message是否为取消请求
+	 * message is CanceledError：代表返回值为true时，message为CanceledError类型
+	 */
+	function isCancel(message) {
+	    return message instanceof CanceledError;
+	}
+	class CanceledError {
+	    constructor(message) {
+	        this.message = message;
+	    }
+	}
+	class CancelTokenStatic {
+	    // 请求参数中配置的cancelToken为source().token这个promise，当用户执行source().cancel时，token这个promise变为成功态。
+	    // dispatchRequest内的config.cancelToken.then会执行request.abort()，从而取消请求
+	    source() {
+	        return {
+	            // token是一个promise（对应请求参数中配置的cancelToken）
+	            token: new Promise((resolve, reject) => {
+	                this.resolve = resolve;
+	            }),
+	            // cancel是让token这个promise成功
+	            cancel: (message) => {
+	                this.resolve(new CanceledError(message));
+	            },
+	        };
 	    }
 	}
 
@@ -2542,7 +2578,12 @@
 	    return instance;
 	}
 	const axios = createInstance();
+	axios.CancelToken = new CancelTokenStatic();
+	axios.isCancel = isCancel;
 
+	// 取消请求
+	const cancelToken = axios.CancelToken;
+	const cancelTokenSource = cancelToken.source();
 	// 基础访问路径
 	const baseUrl = 'http://localhost:8088';
 	const person = {
@@ -2563,6 +2604,7 @@
 	        'x-name': 'x-name',
 	    },
 	    timeout: 1000,
+	    cancelToken: cancelTokenSource.token,
 	};
 	// 【请求拦截器】按照代码顺序从下到上依次执行。【请求拦截器2 => 请求拦截器1】【不取消r1时，最终x-name执行结果为x-name-hello-cuimm】
 	// 请求拦截器1
@@ -2603,8 +2645,13 @@
 	    console.log(response);
 	})
 	    .catch((error) => {
+	    if (axios.isCancel(error)) {
+	        return console.log('用户取消了请求: ', error);
+	    }
 	    console.log('error: ', error);
 	});
+	// 用户主动取消请求
+	cancelTokenSource.cancel('我要取消请求！');
 
 })();
 //# sourceMappingURL=bundle.js.map

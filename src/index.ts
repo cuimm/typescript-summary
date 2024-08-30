@@ -1,4 +1,12 @@
-import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from './axios'
+import axios, {
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from './axios'
+
+// 取消请求
+const cancelToken = axios.CancelToken
+const cancelTokenSource = cancelToken.source()
 
 // 基础访问路径
 const baseUrl = 'http://localhost:8088'
@@ -26,14 +34,17 @@ const requestConfig: AxiosRequestConfig = {
     'x-name': 'x-name',
   },
   timeout: 1000,
+  cancelToken: cancelTokenSource.token,
 }
 
 // 【请求拦截器】按照代码顺序从下到上依次执行。【请求拦截器2 => 请求拦截器1】【不取消r1时，最终x-name执行结果为x-name-hello-cuimm】
 // 请求拦截器1
-const r1 = axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  config.headers['x-name'] += '-cuimm'
-  return config
-})
+const r1 = axios.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    config.headers['x-name'] += '-cuimm'
+    return config
+  }
+)
 // 请求拦截器2
 axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // 此处请求拦截器会等待1s后在往下执行
@@ -62,12 +73,18 @@ axios.interceptors.response.use((response: AxiosResponse) => {
   response.data['name'] += '-c'
   return response
 })
-axios.interceptors.response.eject(response1); // 取消响应拦截器
+axios.interceptors.response.eject(response1) // 取消响应拦截器
 
 axios(requestConfig)
   .then((response: AxiosResponse<Person>) => {
     console.log(response)
   })
   .catch((error) => {
+    if (axios.isCancel(error)) {
+      return console.log('用户取消了请求: ', error)
+    }
     console.log('error: ', error)
   })
+
+// 用户主动取消请求
+cancelTokenSource.cancel('我要取消请求！')
